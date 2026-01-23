@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Regiebericht">
+    <meta name="theme-color" content="#1e3c72">
+    <meta name="description" content="Regiebericht Generator - PDF Regieberichte erstellen">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Regiebericht Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 15px;
+            padding-bottom: 100px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .info-banner {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .info-banner strong {
+            color: #155724;
+        }
+        
+        .info-banner small {
+            color: #666;
+            display: block;
+            margin-top: 3px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1e3c72;
+            font-size: 18px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .form-group {
+            margin-bottom: 8px;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+            color: #444;
+            font-size: 13px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            -webkit-appearance: none;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+        
+        input[readonly] {
+            background: #e9ecef;
+        }
+        
+        input.auto-number {
+            background: #d4edda;
+            border-color: #28a745;
+            font-weight: bold;
+            color: #155724;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .arbeitszeiten-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 12px;
+            background: #f9f9f9;
+        }
+        
+        .mitarbeiter-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .mitarbeiter-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .ma-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .ma-details-row {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .ma-details-row > div {
+            flex: 1;
+        }
+        
+        .ma-details input {
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .ma-details label {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .material-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .material-row:last-child {
+            border-bottom: none;
+        }
+        
+        .mat-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .mat-details input, .mat-details select {
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .mat-details label {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 44px;
+            height: 44px;
+            font-size: 24px;
+            cursor: pointer;
+            align-self: start;
+            margin-top: 20px;
+        }
+        
+        .btn-add {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-top: 12px;
+            width: 100%;
+        }
+        
+        .summary-box {
+            background: #f0f4f8;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .summary-item {
+            text-align: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .summary-item .label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .summary-item .value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .btn-primary {
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-danger {
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            background: #dc3545;
+            color: white;
+        }
+        
+        .signature-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .signature-box {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .signature-box canvas {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            width: 100%;
+            height: 150px;
+            touch-action: none;
+            background: #fafafa;
+        }
+        
+        .signature-label {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #333;
+            padding-top: 5px;
+        }
+        
+        .btn-clear-sig {
+            margin-top: 8px;
+            padding: 8px 20px;
+            font-size: 14px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+        }
+        
+        .status-message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            font-size: 14px;
+        }
+        
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        
+        .counter-info {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #856404;
+        }
+        
+        .counter-info button {
+            background: #ffc107;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .history-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .history-section h4 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .history-list {
+            list-style: none;
+            font-size: 13px;
+        }
+        
+        .history-list li {
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+        
+        @media (min-width: 768px) {
+            .signature-section {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .ma-details {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        /* Dialog Styles */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .dialog-content {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .dialog-content h3 {
+            margin-bottom: 15px;
+            color: #1e3c72;
+        }
+        
+        .settings-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #1e3c72;
+            background: white;
+            color: #1e3c72;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .tab-btn.active {
+            background: #1e3c72;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .add-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f0f4f8;
+            border-radius: 8px;
+        }
+        
+        .add-form input {
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .add-form button {
+            padding: 10px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .stammdaten-liste {
+            list-style: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .stammdaten-liste li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+        
+        .stammdaten-liste li .info {
+            flex: 1;
+        }
+        
+        .stammdaten-liste li .info strong {
+            display: block;
+        }
+        
+        .stammdaten-liste li .info small {
+            color: #666;
+        }
+        
+        .stammdaten-liste li button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        
+        .dialog-buttons {
+            margin-top: 15px;
+            text-align: right;
+        }
+        
+        .dialog-buttons button {
+            padding: 12px 25px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .quick-add-ma {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 8px;
+        }
+        
+        .quick-add-ma label {
+            font-size: 12px;
+            color: #2e7d32;
+            margin-bottom: 5px;
+        }
+        
+        .quick-add-ma select {
+            width: 100%;
+            padding: 10px;
+            font-size: 15px;
+        }
+        
+        .zuschlag-info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .zuschlag-info strong {
+            color: #1565c0;
+        }
+        
+        .zuschlag-info span {
+            font-size: 13px;
+            color: #1976d2;
+        }
+        
+        .zuschlag-info .weekend {
+            background: #ff9800;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .zuschlag-info .sunday {
+            background: #f44336;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .summary-grid-extended {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        
+        .summary-item.highlight-yellow {
+            background: #fff8e1;
+            border: 1px solid #ffc107;
+        }
+        
+        .summary-item.highlight-yellow .value {
+            color: #f57c00;
+        }
+        
+        .summary-item.highlight-orange {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+        }
+        
+        .summary-item.highlight-orange .value {
+            color: #e65100;
+        }
+        
+        .stunden-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 13px;
+        }
+        
+        .stunden-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .stunden-details th, .stunden-details td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stunden-details th {
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .stunden-details td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .stunden-details tr.highlight {
+            background: #fff8e1;
+        }
+        
+        .stunden-details tr.total {
+            background: #e8f5e9;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 500px) {
+            .summary-grid-extended {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Regiebericht</h1>
+        
+        <div class="info-banner">
+            <strong>📱 iPad / iPhone Version</strong>
+            <small>Nummer: <span id="nextNumberDisplay">Wird geladen...</span></small>
+            <button onclick="openSettings()" style="float:right; padding:5px 10px; font-size:12px; border-radius:5px; border:none; background:#1e3c72; color:white;">⚙️ Stammdaten</button>
+        </div>
+        
+        <!-- Stammdaten-Dialog -->
+        <div id="settingsDialog" class="dialog-overlay" style="display:none;">
+            <div class="dialog-content">
+                <h3>⚙️ Stammdaten verwalten</h3>
+                
+                <div class="settings-tabs">
+                    <button class="tab-btn active" onclick="showTab('firmen')">🏢 Firmen</button>
+                    <button class="tab-btn" onclick="showTab('mitarbeiter')">👷 Mitarbeiter</button>
+                </div>
+                
+                <div id="tab-firmen" class="tab-content active">
+                    <div class="add-form">
+                        <input type="text" id="newFirmaName" placeholder="Firmenname">
+                        <input type="text" id="newFirmaAdresse" placeholder="Adresse">
+                        <input type="text" id="newFirmaTel" placeholder="Telefon">
+                        <input type="email" id="newFirmaEmail" placeholder="E-Mail">
+                        <button onclick="addFirma()">+ Hinzufügen</button>
+                    </div>
+                    <ul id="firmenListe" class="stammdaten-liste"></ul>
+                </div>
+                
+                <div id="tab-mitarbeiter" class="tab-content">
+                    <div class="add-form">
+                        <input type="text" id="newMaName" placeholder="Name">
+                        <input type="text" id="newMaFunktion" placeholder="Funktion (z.B. Vorarbeiter)">
+                        <button onclick="addStammMitarbeiter()">+ Hinzufügen</button>
+                    </div>
+                    <ul id="mitarbeiterStammListe" class="stammdaten-liste"></ul>
+                </div>
+                
+                <div class="dialog-buttons">
+                    <button onclick="closeSettings()">Schließen</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Firmendaten -->
+        <div class="card">
+            <h2>🏢 Auftragnehmer</h2>
+            <div class="form-group">
+                <label>Firma auswählen</label>
+                <select id="firmaSelect" onchange="selectFirma()">
+                    <option value="">-- Firma wählen oder unten eingeben --</option>
+                </select>
+            </div>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Firma</label>
+                    <input type="text" id="firma" value="">
+                </div>
+                <div class="form-group full-width">
+                    <label>Adresse</label>
+                    <input type="text" id="firmaAdresse" value="">
+                </div>
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="tel" id="firmaTelefon" value="">
+                </div>
+                <div class="form-group">
+                    <label>E-Mail</label>
+                    <input type="email" id="firmaEmail" value="">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Auftragsdaten -->
+        <div class="card">
+            <h2>📑 Auftragsdaten</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Regiebericht Nr.</label>
+                    <input type="text" id="berichtNr" class="auto-number" readonly value="">
+                </div>
+                <div class="form-group">
+                    <label>Datum</label>
+                    <input type="date" id="datum">
+                </div>
+                <div class="form-group">
+                    <label>Auftragsnummer</label>
+                    <input type="text" id="auftragsnummer" value="">
+                </div>
+                <div class="form-group">
+                    <label>Kostenstelle</label>
+                    <input type="text" id="kostenstelle" value="">
+                </div>
+                <div class="form-group full-width">
+                    <label>Auftraggeber</label>
+                    <input type="text" id="auftraggeber" value="">
+                </div>
+                <div class="form-group full-width">
+                    <label>Bauvorhaben / Einsatzort</label>
+                    <input type="text" id="bauvorhaben" value="">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Arbeitszeiten -->
+        <div class="card">
+            <h2>👷 Arbeitszeiten</h2>
+            
+            <div class="zuschlag-info">
+                <strong>📅 <span id="wochentagAnzeige">-</span></strong>
+                <span id="zuschlagHinweis"></span>
+            </div>
+            
+            <div class="arbeitszeiten-container">
+                <div class="quick-add-ma">
+                    <label>Schnell hinzufügen:</label>
+                    <select id="maQuickSelect" onchange="quickAddMitarbeiter()">
+                        <option value="">-- Mitarbeiter wählen --</option>
+                    </select>
+                </div>
+                <div id="mitarbeiterListe"></div>
+                <button class="btn-add" onclick="addMitarbeiter()">+ Mitarbeiter manuell</button>
+            </div>
+            
+            <div class="summary-box">
+                <div class="summary-grid-extended">
+                    <div class="summary-item">
+                        <div class="label">Mitarbeiter</div>
+                        <div class="value" id="sumMitarbeiter">0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Normalstunden</div>
+                        <div class="value" id="sumNormal">0,00</div>
+                    </div>
+                    <div class="summary-item highlight-yellow">
+                        <div class="label">Überstunden</div>
+                        <div class="value" id="sumUeber">0,00</div>
+                    </div>
+                    <div class="summary-item highlight-orange">
+                        <div class="label">Zuschlag-Std.</div>
+                        <div class="value" id="sumZuschlag">0,00</div>
+                    </div>
+                </div>
+                
+                <div class="stunden-details" id="stundenDetails"></div>
+            </div>
+        </div>
+        
+        <!-- Material -->
+        <div class="card">
+            <h2>🔧 Material / Geräte</h2>
+            <div class="arbeitszeiten-container">
+                <div id="materialListe"></div>
+                <button class="btn-add" onclick="addMaterial()">+ Material</button>
+            </div>
+            
+            <div class="summary-box">
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="label">Positionen</div>
+                        <div class="value" id="sumPositionen">0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Summe</div>
+                        <div class="value" id="sumMaterial">0 €</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tätigkeitsbeschreibung -->
+        <div class="card">
+            <h2>📝 Tätigkeiten</h2>
+            <div class="form-group">
+                <label>Ausgeführte Arbeiten</label>
+                <textarea id="taetigkeiten" placeholder="Beschreibung der ausgeführten Arbeiten..."></textarea>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+                <label>Besondere Vorkommnisse / Anmerkungen</label>
+                <textarea id="vorkommnisse" placeholder="Störungen, Probleme, Hinweise..."></textarea>
+            </div>
+        </div>
+        
+        <!-- Unterschriften -->
+        <div class="card">
+            <h2>✍️ Unterschriften</h2>
+            <div class="signature-section">
+                <div class="signature-box">
+                    <canvas id="sigAuftragnehmer" width="350" height="120"></canvas>
+                    <div class="signature-label">Auftragnehmer</div>
+                    <button class="btn-clear-sig" onclick="clearSignature('sigAuftragnehmer')">Löschen</button>
+                </div>
+                <div class="signature-box">
+                    <canvas id="sigAuftraggeber" width="350" height="120"></canvas>
+                    <div class="signature-label">Auftraggeber</div>
+                    <button class="btn-clear-sig" onclick="clearSignature('sigAuftraggeber')">Löschen</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aktionen -->
+        <div class="card">
+            <div id="statusMessage" class="status-message"></div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="generatePDF()">💾 PDF erstellen</button>
+                <button class="btn-primary" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%);" onclick="generateAndEmail()">📧 PDF erstellen & per E-Mail senden</button>
+                <button class="btn-secondary" onclick="resetForm()">🔄 Neuer Bericht</button>
+            </div>
+            
+            <div class="counter-info">
+                ℹ️ Nächste Nummer: <strong id="counterDisplay">-</strong><br><br>
+                <label style="font-size:12px;">Letzte Nummer manuell setzen:</label>
+                <div style="display:flex; gap:8px; margin-top:5px;">
+                    <input type="number" id="manualNumber" placeholder="z.B. 15" min="0" style="flex:1; padding:8px; font-size:14px;">
+                    <button onclick="setManualNumber()" style="padding:8px 12px;">Setzen</button>
+                    <button onclick="resetCounter()" style="padding:8px 12px; background:#dc3545; color:white;">Reset</button>
+                </div>
+            </div>
+            
+            <div class="history-section" id="historySection" style="display: none;">
+                <h4>📁 Erstellte Berichte heute:</h4>
+                <ul class="history-list" id="historyList"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ==========================================
+        // KONFIGURATION
+        // ==========================================
+        var CONFIG = {
+            prefix: 'RB-',
+            storageKey: 'regiebericht_counter',
+            historyKey: 'regiebericht_history',
+            settingsKey: 'regiebericht_settings',
+            firmenKey: 'regiebericht_firmen',
+            mitarbeiterKey: 'regiebericht_stamm_mitarbeiter',
+            
+            // Zuschlagseinstellungen
+            normalStunden: 8,           // Stunden pro Tag ohne Überstunden
+            zuschlagSamstag: 25,        // % Zuschlag Samstag
+            zuschlagSonntag: 50,        // % Zuschlag Sonntag/Feiertag
+            zuschlagUeberzeit: 25,      // % Zuschlag Überstunden
+            zuschlagNacht: 50,          // % Zuschlag Nachtarbeit (20-06 Uhr)
+            nachtBeginn: 20,            // Nachtarbeit ab 20 Uhr
+            nachtEnde: 6                // Nachtarbeit bis 6 Uhr
+        };
+        
+        // ==========================================
+        // WOCHENTAG & ZUSCHLAG ERKENNUNG
+        // ==========================================
+        var wochentage = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+        
+        function updateWochentagAnzeige() {
+            var datumStr = document.getElementById('datum').value;
+            if (!datumStr) return;
+            
+            var datum = new Date(datumStr);
+            var tag = datum.getDay(); // 0 = Sonntag, 6 = Samstag
+            var tagName = wochentage[tag];
+            
+            var anzeige = document.getElementById('wochentagAnzeige');
+            var hinweis = document.getElementById('zuschlagHinweis');
+            
+            anzeige.textContent = tagName + ', ' + formatDateDE(datumStr);
+            
+            if (tag === 0) {
+                hinweis.innerHTML = '<span class="sunday">Sonntag +' + CONFIG.zuschlagSonntag + '%</span>';
+            } else if (tag === 6) {
+                hinweis.innerHTML = '<span class="weekend">Samstag +' + CONFIG.zuschlagSamstag + '%</span>';
+            } else {
+                hinweis.textContent = 'Werktag (Normal)';
+            }
+            
+            updateSummary();
+        }
+        
+        // Event Listener für Datumsänderung
+        document.getElementById('datum').addEventListener('change', updateWochentagAnzeige);
+        
+        function getZuschlagTyp() {
+            var datumStr = document.getElementById('datum').value;
+            if (!datumStr) return 'normal';
+            
+            var datum = new Date(datumStr);
+            var tag = datum.getDay();
+            
+            if (tag === 0) return 'sonntag';
+            if (tag === 6) return 'samstag';
+            return 'normal';
+        }
+        
+        function berechneStundenDetails(stunden) {
+            var typ = getZuschlagTyp();
+            var result = {
+                gesamt: stunden,
+                normal: 0,
+                ueberstunden: 0,
+                zuschlagStunden: 0,
+                zuschlagProzent: 0,
+                details: []
+            };
+            
+            // Überstunden berechnen
+            if (stunden > CONFIG.normalStunden) {
+                result.normal = CONFIG.normalStunden;
+                result.ueberstunden = stunden - CONFIG.normalStunden;
+            } else {
+                result.normal = stunden;
+            }
+            
+            // Wochenendzuschlag
+            if (typ === 'sonntag') {
+                result.zuschlagStunden = stunden;
+                result.zuschlagProzent = CONFIG.zuschlagSonntag;
+                result.details.push({
+                    bezeichnung: 'Sonntagszuschlag',
+                    stunden: stunden,
+                    prozent: CONFIG.zuschlagSonntag
+                });
+            } else if (typ === 'samstag') {
+                result.zuschlagStunden = stunden;
+                result.zuschlagProzent = CONFIG.zuschlagSamstag;
+                result.details.push({
+                    bezeichnung: 'Samstagszuschlag',
+                    stunden: stunden,
+                    prozent: CONFIG.zuschlagSamstag
+                });
+            }
+            
+            // Überstundenzuschlag (nur an Werktagen extra)
+            if (typ === 'normal' && result.ueberstunden > 0) {
+                result.details.push({
+                    bezeichnung: 'Überstundenzuschlag',
+                    stunden: result.ueberstunden,
+                    prozent: CONFIG.zuschlagUeberzeit
+                });
+            }
+            
+            return result;
+        }
+        
+        // ==========================================
+        // STAMMDATEN: FIRMEN
+        // ==========================================
+        function getFirmen() {
+            return JSON.parse(localStorage.getItem(CONFIG.firmenKey) || '[]');
+        }
+        
+        function saveFirmen(firmen) {
+            localStorage.setItem(CONFIG.firmenKey, JSON.stringify(firmen));
+            updateFirmenDropdown();
+        }
+        
+        function addFirma() {
+            var name = document.getElementById('newFirmaName').value.trim();
+            if (!name) {
+                alert('Bitte Firmennamen eingeben');
+                return;
+            }
+            
+            var firmen = getFirmen();
+            firmen.push({
+                id: Date.now(),
+                name: name,
+                adresse: document.getElementById('newFirmaAdresse').value.trim(),
+                telefon: document.getElementById('newFirmaTel').value.trim(),
+                email: document.getElementById('newFirmaEmail').value.trim()
+            });
+            saveFirmen(firmen);
+            
+            document.getElementById('newFirmaName').value = '';
+            document.getElementById('newFirmaAdresse').value = '';
+            document.getElementById('newFirmaTel').value = '';
+            document.getElementById('newFirmaEmail').value = '';
+            
+            updateFirmenListe();
+        }
+        
+        function deleteFirma(id) {
+            var firmen = getFirmen().filter(function(f) { return f.id !== id; });
+            saveFirmen(firmen);
+            updateFirmenListe();
+        }
+        
+        function updateFirmenDropdown() {
+            var select = document.getElementById('firmaSelect');
+            var firmen = getFirmen();
+            select.innerHTML = '<option value="">-- Firma wählen oder unten eingeben --</option>';
+            firmen.forEach(function(f) {
+                var opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = f.name;
+                select.appendChild(opt);
+            });
+        }
+        
+        function updateFirmenListe() {
+            var liste = document.getElementById('firmenListe');
+            var firmen = getFirmen();
+            liste.innerHTML = '';
+            firmen.forEach(function(f) {
+                var li = document.createElement('li');
+                li.innerHTML = '<div class="info"><strong>' + f.name + '</strong><small>' + (f.adresse || '') + '</small></div>' +
+                    '<button onclick="deleteFirma(' + f.id + ')">Löschen</button>';
+                liste.appendChild(li);
+            });
+        }
+        
+        function selectFirma() {
+            var select = document.getElementById('firmaSelect');
+            var id = parseInt(select.value);
+            if (!id) return;
+            
+            var firma = getFirmen().find(function(f) { return f.id === id; });
+            if (firma) {
+                document.getElementById('firma').value = firma.name;
+                document.getElementById('firmaAdresse').value = firma.adresse || '';
+                document.getElementById('firmaTelefon').value = firma.telefon || '';
+                document.getElementById('firmaEmail').value = firma.email || '';
+            }
+        }
+        
+        // ==========================================
+        // STAMMDATEN: MITARBEITER
+        // ==========================================
+        function getStammMitarbeiter() {
+            return JSON.parse(localStorage.getItem(CONFIG.mitarbeiterKey) || '[]');
+        }
+        
+        function saveStammMitarbeiter(mitarbeiter) {
+            localStorage.setItem(CONFIG.mitarbeiterKey, JSON.stringify(mitarbeiter));
+            updateMitarbeiterDropdown();
+        }
+        
+        function addStammMitarbeiter() {
+            var name = document.getElementById('newMaName').value.trim();
+            if (!name) {
+                alert('Bitte Namen eingeben');
+                return;
+            }
+            
+            var mitarbeiter = getStammMitarbeiter();
+            mitarbeiter.push({
+                id: Date.now(),
+                name: name,
+                funktion: document.getElementById('newMaFunktion').value.trim()
+            });
+            saveStammMitarbeiter(mitarbeiter);
+            
+            document.getElementById('newMaName').value = '';
+            document.getElementById('newMaFunktion').value = '';
+            
+            updateMitarbeiterStammListe();
+        }
+        
+        function deleteStammMitarbeiter(id) {
+            var mitarbeiter = getStammMitarbeiter().filter(function(m) { return m.id !== id; });
+            saveStammMitarbeiter(mitarbeiter);
+            updateMitarbeiterStammListe();
+        }
+        
+        function updateMitarbeiterDropdown() {
+            var select = document.getElementById('maQuickSelect');
+            var mitarbeiter = getStammMitarbeiter();
+            select.innerHTML = '<option value="">-- Mitarbeiter wählen --</option>';
+            mitarbeiter.forEach(function(m) {
+                var opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name + (m.funktion ? ' (' + m.funktion + ')' : '');
+                select.appendChild(opt);
+            });
+        }
+        
+        function updateMitarbeiterStammListe() {
+            var liste = document.getElementById('mitarbeiterStammListe');
+            var mitarbeiter = getStammMitarbeiter();
+            liste.innerHTML = '';
+            mitarbeiter.forEach(function(m) {
+                var li = document.createElement('li');
+                li.innerHTML = '<div class="info"><strong>' + m.name + '</strong><small>' + (m.funktion || '') + '</small></div>' +
+                    '<button onclick="deleteStammMitarbeiter(' + m.id + ')">Löschen</button>';
+                liste.appendChild(li);
+            });
+        }
+        
+        function quickAddMitarbeiter() {
+            var select = document.getElementById('maQuickSelect');
+            var id = parseInt(select.value);
+            if (!id) return;
+            
+            var ma = getStammMitarbeiter().find(function(m) { return m.id === id; });
+            if (ma) {
+                addMitarbeiterWithName(ma.name + (ma.funktion ? ' / ' + ma.funktion : ''));
+            }
+            select.value = '';
+        }
+        
+        function addMitarbeiterWithName(name) {
+            mitarbeiterCount++;
+            var container = document.getElementById('mitarbeiterListe');
+            var div = document.createElement('div');
+            div.className = 'mitarbeiter-row';
+            div.id = 'mitarbeiter-' + mitarbeiterCount;
+            div.innerHTML = 
+                '<div class="ma-content">' +
+                    '<input type="text" placeholder="Name / Funktion" class="ma-name" style="font-weight:600;" value="' + (name || '') + '">' +
+                    '<div class="ma-details">' +
+                        '<div><label>Von</label><input type="time" value="07:00" class="ma-von"></div>' +
+                        '<div><label>Bis</label><input type="time" value="16:00" class="ma-bis"></div>' +
+                        '<div><label>Pause</label><input type="number" value="30" min="0" step="15" class="ma-pause"></div>' +
+                        '<div><label>Stunden</label><input type="text" readonly class="ma-stunden" value="8,00"></div>' +
+                    '</div>' +
+                '</div>' +
+                '<button class="btn-remove" onclick="removeMitarbeiter(' + mitarbeiterCount + ')">×</button>';
+            container.appendChild(div);
+            
+            var inputs = div.querySelectorAll('input');
+            inputs.forEach(function(input) {
+                input.addEventListener('change', function() {
+                    calculateHours(div);
+                    updateSummary();
+                });
+            });
+            
+            updateSummary();
+        }
+        
+        // ==========================================
+        // SETTINGS DIALOG
+        // ==========================================
+        function openSettings() {
+            document.getElementById('settingsDialog').style.display = 'flex';
+            updateFirmenListe();
+            updateMitarbeiterStammListe();
+        }
+        
+        function closeSettings() {
+            document.getElementById('settingsDialog').style.display = 'none';
+        }
+        
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            document.getElementById('tab-' + tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // ==========================================
+        // E-MAIL FUNKTION
+        // ==========================================
+        var lastGeneratedPDF = null;
+        var lastPDFFilename = null;
+        
+        function generateAndEmail() {
+            generatePDF(true);
+        }
+        
+        function openEmailWithPDF() {
+            if (!lastGeneratedPDF) {
+                showStatus('Bitte erst PDF erstellen', true);
+                return;
+            }
+            
+            var auftraggeber = document.getElementById('auftraggeber').value || 'Kunde';
+            var berichtNr = document.getElementById('berichtNr').value;
+            var datum = document.getElementById('datum').value;
+            
+            var subject = encodeURIComponent('Regiebericht ' + berichtNr + ' vom ' + formatDateDE(datum));
+            var body = encodeURIComponent(
+                'Sehr geehrte Damen und Herren,\n\n' +
+                'anbei erhalten Sie den Regiebericht ' + berichtNr + ' vom ' + formatDateDE(datum) + '.\n\n' +
+                'Mit freundlichen Grüßen\n' +
+                (document.getElementById('firma').value || '')
+            );
+            
+            // Für iOS: Blob URL erstellen und Mail öffnen
+            // Hinweis: iOS Mail kann keine Blob-Attachments direkt - PDF muss manuell angehängt werden
+            var mailtoUrl = 'mailto:?subject=' + subject + '&body=' + body;
+            
+            // PDF zum Teilen vorbereiten
+            if (navigator.share && navigator.canShare) {
+                // Web Share API (funktioniert auf iOS Safari)
+                var file = new File([lastGeneratedPDF], lastPDFFilename, { type: 'application/pdf' });
+                
+                if (navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        title: 'Regiebericht ' + berichtNr,
+                        text: 'Regiebericht vom ' + formatDateDE(datum),
+                        files: [file]
+                    }).then(function() {
+                        showStatus('✓ Teilen-Dialog geöffnet', false);
+                    }).catch(function(err) {
+                        console.log('Share error:', err);
+                        // Fallback: Mail ohne Anhang
+                        window.location.href = mailtoUrl;
+                        showStatus('Mail geöffnet - PDF bitte manuell aus "Dateien" anhängen', false);
+                    });
+                } else {
+                    window.location.href = mailtoUrl;
+                    showStatus('Mail geöffnet - PDF bitte manuell anhängen', false);
+                }
+            } else {
+                window.location.href = mailtoUrl;
+                showStatus('Mail geöffnet - PDF bitte manuell aus "Dateien" anhängen', false);
+            }
+        }
+        
+        // ==========================================
+        // ZÄHLER-VERWALTUNG (localStorage)
+        // ==========================================
+        function getCounter() {
+            var stored = localStorage.getItem(CONFIG.storageKey);
+            if (stored) {
+                var data = JSON.parse(stored);
+                var currentYear = new Date().getFullYear();
+                // Bei Jahreswechsel zurücksetzen
+                if (data.year !== currentYear) {
+                    return { year: currentYear, number: 0 };
+                }
+                return data;
+            }
+            return { year: new Date().getFullYear(), number: 0 };
+        }
+        
+        function saveCounter(counter) {
+            localStorage.setItem(CONFIG.storageKey, JSON.stringify(counter));
+        }
+        
+        function getNextNumber() {
+            var counter = getCounter();
+            var nextNum = counter.number + 1;
+            var formatted = String(nextNum).padStart(3, '0');
+            return CONFIG.prefix + counter.year + '-' + formatted;
+        }
+        
+        function incrementCounter() {
+            var counter = getCounter();
+            counter.number++;
+            saveCounter(counter);
+            return CONFIG.prefix + counter.year + '-' + String(counter.number).padStart(3, '0');
+        }
+        
+        function resetCounter() {
+            if (confirm('Zähler wirklich auf 0 zurücksetzen?')) {
+                saveCounter({ year: new Date().getFullYear(), number: 0 });
+                updateNumberDisplay();
+                showStatus('Zähler zurückgesetzt', false);
+            }
+        }
+        
+        function setManualNumber() {
+            var input = document.getElementById('manualNumber');
+            var num = parseInt(input.value);
+            if (isNaN(num) || num < 0) {
+                showStatus('Bitte gültige Nummer eingeben', true);
+                return;
+            }
+            saveCounter({ year: new Date().getFullYear(), number: num });
+            updateNumberDisplay();
+            input.value = '';
+            showStatus('Zähler auf ' + num + ' gesetzt – nächste Nummer ist ' + getNextNumber(), false);
+        }
+        
+        function updateNumberDisplay() {
+            var nextNum = getNextNumber();
+            document.getElementById('berichtNr').value = nextNum;
+            document.getElementById('nextNumberDisplay').textContent = nextNum;
+            document.getElementById('counterDisplay').textContent = nextNum;
+        }
+        
+        // ==========================================
+        // EINSTELLUNGEN SPEICHERN
+        // ==========================================
+        function saveSettings() {
+            var settings = {
+                firma: document.getElementById('firma').value,
+                firmaAdresse: document.getElementById('firmaAdresse').value,
+                firmaTelefon: document.getElementById('firmaTelefon').value,
+                firmaEmail: document.getElementById('firmaEmail').value
+            };
+            localStorage.setItem(CONFIG.settingsKey, JSON.stringify(settings));
+        }
+        
+        function loadSettings() {
+            var stored = localStorage.getItem(CONFIG.settingsKey);
+            if (stored) {
+                var settings = JSON.parse(stored);
+                document.getElementById('firma').value = settings.firma || '';
+                document.getElementById('firmaAdresse').value = settings.firmaAdresse || '';
+                document.getElementById('firmaTelefon').value = settings.firmaTelefon || '';
+                document.getElementById('firmaEmail').value = settings.firmaEmail || '';
+            }
+        }
+        
+        // Auto-Save Firmendaten
+        ['firma', 'firmaAdresse', 'firmaTelefon', 'firmaEmail'].forEach(function(id) {
+            document.getElementById(id).addEventListener('change', saveSettings);
+        });
+        
+        // ==========================================
+        // HISTORIE
+        // ==========================================
+        function addToHistory(berichtNr, datum) {
+            var history = JSON.parse(localStorage.getItem(CONFIG.historyKey) || '[]');
+            history.unshift({
+                nr: berichtNr,
+                datum: datum,
+                erstellt: new Date().toISOString()
+            });
+            // Nur letzte 20 behalten
+            history = history.slice(0, 20);
+            localStorage.setItem(CONFIG.historyKey, JSON.stringify(history));
+            updateHistoryDisplay();
+        }
+        
+        function updateHistoryDisplay() {
+            var history = JSON.parse(localStorage.getItem(CONFIG.historyKey) || '[]');
+            var today = new Date().toDateString();
+            var todayHistory = history.filter(function(h) {
+                return new Date(h.erstellt).toDateString() === today;
+            });
+            
+            if (todayHistory.length > 0) {
+                document.getElementById('historySection').style.display = 'block';
+                var list = document.getElementById('historyList');
+                list.innerHTML = '';
+                todayHistory.forEach(function(h) {
+                    var li = document.createElement('li');
+                    li.textContent = '📄 ' + h.nr + ' (' + h.datum + ')';
+                    list.appendChild(li);
+                });
+            }
+        }
+        
+        // ==========================================
+        // MITARBEITER
+        // ==========================================
+        var mitarbeiterCount = 0;
+        
+        function addMitarbeiter() {
+            addMitarbeiterWithName('');
+        }
+        
+        function removeMitarbeiter(id) {
+            var el = document.getElementById('mitarbeiter-' + id);
+            if (el) {
+                el.remove();
+                updateSummary();
+            }
+        }
+        
+        function calculateHours(row) {
+            var von = row.querySelector('.ma-von').value;
+            var bis = row.querySelector('.ma-bis').value;
+            var pause = parseInt(row.querySelector('.ma-pause').value) || 0;
+            
+            if (von && bis) {
+                var start = new Date('2000-01-01 ' + von);
+                var end = new Date('2000-01-01 ' + bis);
+                var diff = (end - start) / 1000 / 60;
+                var arbeitszeit = (diff - pause) / 60;
+                if (arbeitszeit < 0) arbeitszeit = 0;
+                row.querySelector('.ma-stunden').value = arbeitszeit.toFixed(2).replace('.', ',');
+            }
+        }
+        
+        // ==========================================
+        // MATERIAL
+        // ==========================================
+        var materialCount = 0;
+        
+        function addMaterial() {
+            materialCount++;
+            var container = document.getElementById('materialListe');
+            var div = document.createElement('div');
+            div.className = 'material-row';
+            div.id = 'material-' + materialCount;
+            div.innerHTML = 
+                '<div class="mat-content">' +
+                    '<input type="text" placeholder="Bezeichnung" class="mat-bezeichnung" style="font-weight:600;">' +
+                    '<div class="mat-details">' +
+                        '<div><label>Menge</label><input type="number" value="1" min="0" step="0.1" class="mat-menge"></div>' +
+                        '<div><label>Einheit</label><select class="mat-einheit">' +
+                            '<option>Stk</option><option>m</option><option>m²</option><option>m³</option>' +
+                            '<option>kg</option><option>l</option><option>Std</option><option>psch</option>' +
+                        '</select></div>' +
+                        '<div><label>Preis €</label><input type="number" value="0" min="0" step="0.01" class="mat-preis"></div>' +
+                    '</div>' +
+                '</div>' +
+                '<button class="btn-remove" onclick="removeMaterial(' + materialCount + ')">×</button>';
+            container.appendChild(div);
+            
+            var inputs = div.querySelectorAll('input');
+            inputs.forEach(function(input) {
+                input.addEventListener('change', updateSummary);
+            });
+            
+            updateSummary();
+        }
+        
+        function removeMaterial(id) {
+            var el = document.getElementById('material-' + id);
+            if (el) {
+                el.remove();
+                updateSummary();
+            }
+        }
+        
+        function updateSummary() {
+            var mitarbeiterRows = document.querySelectorAll('.mitarbeiter-row');
+            var totalStunden = 0;
+            var totalNormal = 0;
+            var totalUeber = 0;
+            var totalZuschlag = 0;
+            var allDetails = [];
+            
+            mitarbeiterRows.forEach(function(row) {
+                var stunden = parseFloat(row.querySelector('.ma-stunden').value.replace(',', '.')) || 0;
+                totalStunden += stunden;
+                
+                var details = berechneStundenDetails(stunden);
+                totalNormal += details.normal;
+                totalUeber += details.ueberstunden;
+                totalZuschlag += details.zuschlagStunden;
+            });
+            
+            document.getElementById('sumMitarbeiter').textContent = mitarbeiterRows.length;
+            document.getElementById('sumNormal').textContent = totalNormal.toFixed(2).replace('.', ',');
+            document.getElementById('sumUeber').textContent = totalUeber.toFixed(2).replace('.', ',');
+            document.getElementById('sumZuschlag').textContent = totalZuschlag.toFixed(2).replace('.', ',');
+            
+            // Details-Tabelle erstellen
+            var detailsHtml = '';
+            var typ = getZuschlagTyp();
+            
+            if (mitarbeiterRows.length > 0) {
+                detailsHtml = '<table>';
+                detailsHtml += '<tr><th>Art</th><th>Stunden</th></tr>';
+                detailsHtml += '<tr><td>Normalstunden (bis ' + CONFIG.normalStunden + 'h/Person)</td><td>' + totalNormal.toFixed(2).replace('.', ',') + ' Std</td></tr>';
+                
+                if (totalUeber > 0) {
+                    detailsHtml += '<tr class="highlight"><td>Überstunden (+' + CONFIG.zuschlagUeberzeit + '%)</td><td>' + totalUeber.toFixed(2).replace('.', ',') + ' Std</td></tr>';
+                }
+                
+                if (typ === 'samstag') {
+                    detailsHtml += '<tr class="highlight"><td>Samstagszuschlag (+' + CONFIG.zuschlagSamstag + '% auf alle Std.)</td><td>' + totalStunden.toFixed(2).replace('.', ',') + ' Std</td></tr>';
+                } else if (typ === 'sonntag') {
+                    detailsHtml += '<tr class="highlight"><td>Sonntagszuschlag (+' + CONFIG.zuschlagSonntag + '% auf alle Std.)</td><td>' + totalStunden.toFixed(2).replace('.', ',') + ' Std</td></tr>';
+                }
+                
+                detailsHtml += '<tr class="total"><td>Gesamt</td><td>' + totalStunden.toFixed(2).replace('.', ',') + ' Std</td></tr>';
+                detailsHtml += '</table>';
+            }
+            
+            document.getElementById('stundenDetails').innerHTML = detailsHtml;
+            
+            // Material summieren
+            var materialRows = document.querySelectorAll('.material-row');
+            var totalMaterial = 0;
+            materialRows.forEach(function(row) {
+                var menge = parseFloat(row.querySelector('.mat-menge').value) || 0;
+                var preis = parseFloat(row.querySelector('.mat-preis').value) || 0;
+                totalMaterial += menge * preis;
+            });
+            document.getElementById('sumPositionen').textContent = materialRows.length;
+            document.getElementById('sumMaterial').textContent = totalMaterial.toFixed(0) + ' €';
+        }
+        
+        // ==========================================
+        // UNTERSCHRIFTEN (optimiert für Apple Pencil)
+        // ==========================================
+        function initSignature(canvasId) {
+            var canvas = document.getElementById(canvasId);
+            var ctx = canvas.getContext('2d');
+            var drawing = false;
+            var points = [];
+            
+            // Canvas Größe anpassen (höhere Auflösung für schärfere Linien)
+            function resizeCanvas() {
+                var rect = canvas.getBoundingClientRect();
+                var dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#000';
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            function getPos(e) {
+                var rect = canvas.getBoundingClientRect();
+                var x, y, pressure;
+                
+                if (e.touches && e.touches.length > 0) {
+                    x = e.touches[0].clientX - rect.left;
+                    y = e.touches[0].clientY - rect.top;
+                    // Apple Pencil Druckempfindlichkeit
+                    pressure = e.touches[0].force || 0.5;
+                } else {
+                    x = e.clientX - rect.left;
+                    y = e.clientY - rect.top;
+                    pressure = 0.5;
+                }
+                
+                return { x: x, y: y, pressure: pressure };
+            }
+            
+            function start(e) {
+                drawing = true;
+                points = [];
+                var pos = getPos(e);
+                points.push(pos);
+                e.preventDefault();
+            }
+            
+            function draw(e) {
+                if (!drawing) return;
+                e.preventDefault();
+                
+                var pos = getPos(e);
+                points.push(pos);
+                
+                // Mindestens 2 Punkte für eine Linie
+                if (points.length < 2) return;
+                
+                ctx.beginPath();
+                
+                // Glatte Kurven mit quadratischen Bezier-Kurven
+                if (points.length === 2) {
+                    ctx.moveTo(points[0].x, points[0].y);
+                    ctx.lineTo(points[1].x, points[1].y);
+                } else {
+                    ctx.moveTo(points[0].x, points[0].y);
+                    
+                    for (var i = 1; i < points.length - 1; i++) {
+                        var midX = (points[i].x + points[i + 1].x) / 2;
+                        var midY = (points[i].y + points[i + 1].y) / 2;
+                        ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
+                    }
+                    
+                    // Letzte Linie
+                    var last = points[points.length - 1];
+                    ctx.lineTo(last.x, last.y);
+                }
+                
+                // Liniendicke basierend auf Druck (1.5 bis 4 Pixel)
+                var avgPressure = points.reduce(function(sum, p) { return sum + p.pressure; }, 0) / points.length;
+                ctx.lineWidth = 1.5 + (avgPressure * 2.5);
+                
+                ctx.stroke();
+                
+                // Nur letzte 3 Punkte behalten für Performance
+                if (points.length > 3) {
+                    points = points.slice(-3);
+                }
+            }
+            
+            function stop(e) {
+                if (drawing) {
+                    drawing = false;
+                    points = [];
+                }
+            }
+            
+            // Maus-Events
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stop);
+            canvas.addEventListener('mouseout', stop);
+            
+            // Touch-Events (Finger & Apple Pencil)
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            canvas.addEventListener('touchend', stop);
+            canvas.addEventListener('touchcancel', stop);
+            
+            // Pointer-Events (bessere Apple Pencil Unterstützung)
+            canvas.addEventListener('pointerdown', function(e) {
+                if (e.pointerType === 'pen' || e.pointerType === 'touch') {
+                    start(e);
+                }
+            });
+            canvas.addEventListener('pointermove', function(e) {
+                if (e.pointerType === 'pen' || e.pointerType === 'touch') {
+                    if (drawing) {
+                        var rect = canvas.getBoundingClientRect();
+                        points.push({
+                            x: e.clientX - rect.left,
+                            y: e.clientY - rect.top,
+                            pressure: e.pressure || 0.5
+                        });
+                        
+                        if (points.length >= 2) {
+                            ctx.beginPath();
+                            ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+                            ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+                            ctx.lineWidth = 1.5 + (e.pressure * 2.5);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            });
+            canvas.addEventListener('pointerup', stop);
+            canvas.addEventListener('pointercancel', stop);
+        }
+        
+        function clearSignature(canvasId) {
+            var canvas = document.getElementById(canvasId);
+            var ctx = canvas.getContext('2d');
+            var dpr = window.devicePixelRatio || 1;
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+        }
+        
+        function isCanvasEmpty(canvasId) {
+            var canvas = document.getElementById(canvasId);
+            var ctx = canvas.getContext('2d');
+            var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            for (var i = 3; i < data.length; i += 4) {
+                if (data[i] !== 0) return false;
+            }
+            return true;
+        }
+        
+        // ==========================================
+        // PDF GENERIERUNG
+        // ==========================================
+        function formatDateDE(dateStr) {
+            if (!dateStr) return '-';
+            var d = new Date(dateStr);
+            return d.toLocaleDateString('de-DE');
+        }
+        
+        function showStatus(msg, isError) {
+            var el = document.getElementById('statusMessage');
+            el.textContent = msg;
+            el.className = 'status-message ' + (isError ? 'error' : 'success');
+            if (!isError) {
+                setTimeout(function() { el.style.display = 'none'; }, 5000);
+            }
+        }
+        
+        function generatePDF(sendEmail) {
+            try {
+                var berichtNr = incrementCounter();
+                var datum = document.getElementById('datum').value;
+                
+                var jsPDF = window.jspdf.jsPDF;
+                var doc = new jsPDF();
+                var pageWidth = doc.internal.pageSize.getWidth();
+                var margin = 15;
+                var y = 15;
+                
+                // Kopf
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('REGIEBERICHT', pageWidth / 2, y, { align: 'center' });
+                y += 10;
+                
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Nr. ' + berichtNr, pageWidth / 2, y, { align: 'center' });
+                y += 12;
+                
+                doc.setLineWidth(0.5);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 10;
+                
+                // Firmendaten
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Auftragnehmer:', margin, y);
+                doc.text('Auftragsdaten:', pageWidth / 2 + 5, y);
+                y += 5;
+                
+                doc.setFont('helvetica', 'normal');
+                doc.text(document.getElementById('firma').value || '-', margin, y);
+                doc.text('Datum: ' + formatDateDE(datum), pageWidth / 2 + 5, y);
+                y += 5;
+                
+                doc.text(document.getElementById('firmaAdresse').value || '-', margin, y);
+                doc.text('Auftragsnr.: ' + (document.getElementById('auftragsnummer').value || '-'), pageWidth / 2 + 5, y);
+                y += 5;
+                
+                var tel = document.getElementById('firmaTelefon').value;
+                if (tel) doc.text('Tel.: ' + tel, margin, y);
+                doc.text('Kostenstelle: ' + (document.getElementById('kostenstelle').value || '-'), pageWidth / 2 + 5, y);
+                y += 10;
+                
+                doc.setFont('helvetica', 'bold');
+                doc.text('Auftraggeber:', margin, y);
+                y += 5;
+                doc.setFont('helvetica', 'normal');
+                doc.text(document.getElementById('auftraggeber').value || '-', margin, y);
+                y += 7;
+                
+                doc.setFont('helvetica', 'bold');
+                doc.text('Bauvorhaben / Einsatzort:', margin, y);
+                y += 5;
+                doc.setFont('helvetica', 'normal');
+                doc.text(document.getElementById('bauvorhaben').value || '-', margin, y);
+                y += 12;
+                
+                // Arbeitszeiten
+                doc.setFont('helvetica', 'bold');
+                doc.text('Arbeitszeiten:', margin, y);
+                y += 3;
+                
+                // Wochentaginfo
+                var typ = getZuschlagTyp();
+                var datumStr = document.getElementById('datum').value;
+                var datumObj = new Date(datumStr);
+                var tagName = wochentage[datumObj.getDay()];
+                
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9);
+                var zuschlagText = tagName;
+                if (typ === 'samstag') zuschlagText += ' (Samstagszuschlag +' + CONFIG.zuschlagSamstag + '%)';
+                if (typ === 'sonntag') zuschlagText += ' (Sonntagszuschlag +' + CONFIG.zuschlagSonntag + '%)';
+                doc.text(zuschlagText, margin, y);
+                y += 5;
+                doc.setFontSize(10);
+                
+                var maData = [];
+                var totalStunden = 0;
+                var totalNormal = 0;
+                var totalUeber = 0;
+                
+                document.querySelectorAll('.mitarbeiter-row').forEach(function(row) {
+                    var stunden = parseFloat(row.querySelector('.ma-stunden').value.replace(',', '.')) || 0;
+                    totalStunden += stunden;
+                    
+                    var details = berechneStundenDetails(stunden);
+                    totalNormal += details.normal;
+                    totalUeber += details.ueberstunden;
+                    
+                    maData.push([
+                        row.querySelector('.ma-name').value || '-',
+                        row.querySelector('.ma-von').value || '-',
+                        row.querySelector('.ma-bis').value || '-',
+                        (row.querySelector('.ma-pause').value || '0') + ' Min',
+                        stunden.toFixed(2).replace('.', ',') + ' Std'
+                    ]);
+                });
+                
+                if (maData.length > 0) {
+                    doc.autoTable({
+                        startY: y,
+                        head: [['Name / Funktion', 'Von', 'Bis', 'Pause', 'Stunden']],
+                        body: maData,
+                        theme: 'grid',
+                        styles: { fontSize: 9, cellPadding: 2 },
+                        headStyles: { fillColor: [30, 60, 114] },
+                        margin: { left: margin, right: margin }
+                    });
+                    y = doc.lastAutoTable.finalY + 5;
+                    
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Gesamt: ' + totalStunden.toFixed(2).replace('.', ',') + ' Stunden', pageWidth - margin, y, { align: 'right' });
+                    y += 5;
+                    
+                    // Zuschlagsübersicht
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(9);
+                    var zuschlagInfo = 'Davon: ' + totalNormal.toFixed(2).replace('.', ',') + ' Std Normal';
+                    if (totalUeber > 0) {
+                        zuschlagInfo += ', ' + totalUeber.toFixed(2).replace('.', ',') + ' Std Überstunden (+' + CONFIG.zuschlagUeberzeit + '%)';
+                    }
+                    if (typ === 'samstag') {
+                        zuschlagInfo += ' | Samstagszuschlag +' + CONFIG.zuschlagSamstag + '% auf alle Stunden';
+                    } else if (typ === 'sonntag') {
+                        zuschlagInfo += ' | Sonntagszuschlag +' + CONFIG.zuschlagSonntag + '% auf alle Stunden';
+                    }
+                    doc.text(zuschlagInfo, margin, y);
+                    y += 8;
+                    doc.setFontSize(10);
+                } else {
+                    y += 5;
+                }
+                
+                // Material
+                doc.setFont('helvetica', 'bold');
+                doc.text('Material / Geräte:', margin, y);
+                y += 3;
+                
+                var matData = [];
+                document.querySelectorAll('.material-row').forEach(function(row) {
+                    var menge = row.querySelector('.mat-menge').value || '0';
+                    var preis = parseFloat(row.querySelector('.mat-preis').value) || 0;
+                    var gesamt = (parseFloat(menge) || 0) * preis;
+                    matData.push([
+                        row.querySelector('.mat-bezeichnung').value || '-',
+                        menge,
+                        row.querySelector('.mat-einheit').value,
+                        preis.toFixed(2).replace('.', ',') + ' €',
+                        gesamt.toFixed(2).replace('.', ',') + ' €'
+                    ]);
+                });
+                
+                if (matData.length > 0) {
+                    doc.autoTable({
+                        startY: y,
+                        head: [['Bezeichnung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
+                        body: matData,
+                        theme: 'grid',
+                        styles: { fontSize: 9, cellPadding: 2 },
+                        headStyles: { fillColor: [30, 60, 114] },
+                        margin: { left: margin, right: margin }
+                    });
+                    y = doc.lastAutoTable.finalY + 5;
+                    
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Materialsumme: ' + document.getElementById('sumMaterial').textContent, pageWidth - margin, y, { align: 'right' });
+                    y += 10;
+                } else {
+                    y += 5;
+                }
+                
+                // Seitenumbruch prüfen
+                if (y > 220) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                // Tätigkeiten
+                doc.setFont('helvetica', 'bold');
+                doc.text('Ausgeführte Arbeiten:', margin, y);
+                y += 5;
+                doc.setFont('helvetica', 'normal');
+                var taet = document.getElementById('taetigkeiten').value || '-';
+                var splitTaet = doc.splitTextToSize(taet, pageWidth - 2 * margin);
+                doc.text(splitTaet, margin, y);
+                y += splitTaet.length * 5 + 5;
+                
+                var vork = document.getElementById('vorkommnisse').value;
+                if (vork) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Besondere Vorkommnisse / Anmerkungen:', margin, y);
+                    y += 5;
+                    doc.setFont('helvetica', 'normal');
+                    var splitVork = doc.splitTextToSize(vork, pageWidth - 2 * margin);
+                    doc.text(splitVork, margin, y);
+                    y += splitVork.length * 5 + 5;
+                }
+                
+                // Unterschriften
+                if (y > 230) {
+                    doc.addPage();
+                    y = 20;
+                }
+                y = Math.max(y + 10, 240);
+                
+                doc.setFont('helvetica', 'bold');
+                doc.text('Unterschriften:', margin, y);
+                y += 10;
+                
+                if (!isCanvasEmpty('sigAuftragnehmer')) {
+                    var sig1 = document.getElementById('sigAuftragnehmer').toDataURL('image/png');
+                    doc.addImage(sig1, 'PNG', margin, y, 50, 20);
+                }
+                doc.line(margin, y + 22, margin + 60, y + 22);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9);
+                doc.text('Auftragnehmer', margin, y + 27);
+                
+                if (!isCanvasEmpty('sigAuftraggeber')) {
+                    var sig2 = document.getElementById('sigAuftraggeber').toDataURL('image/png');
+                    doc.addImage(sig2, 'PNG', pageWidth / 2 + 10, y, 50, 20);
+                }
+                doc.line(pageWidth / 2 + 10, y + 22, pageWidth / 2 + 70, y + 22);
+                doc.text('Auftraggeber', pageWidth / 2 + 10, y + 27);
+                
+                // Fußzeile
+                doc.setFontSize(8);
+                doc.setTextColor(128);
+                doc.text('Erstellt: ' + formatDateDE(new Date().toISOString().split('T')[0]), pageWidth / 2, 290, { align: 'center' });
+                
+                // PDF speichern
+                var filename = 'Regiebericht_' + berichtNr + '_' + datum + '.pdf';
+                
+                // PDF als Blob speichern für E-Mail
+                lastGeneratedPDF = doc.output('blob');
+                lastPDFFilename = filename;
+                
+                // PDF herunterladen
+                doc.save(filename);
+                
+                // Historie und Anzeige aktualisieren
+                addToHistory(berichtNr, datum);
+                updateNumberDisplay();
+                
+                showStatus('✓ ' + filename + ' erstellt!', false);
+                
+                // Wenn E-Mail gewünscht, Teilen-Dialog öffnen
+                if (sendEmail) {
+                    setTimeout(function() {
+                        openEmailWithPDF();
+                    }, 500);
+                }
+                
+            } catch (err) {
+                console.error(err);
+                showStatus('Fehler: ' + err.message, true);
+            }
+        }
+        
+        function resetForm() {
+            if (confirm('Neuen Bericht beginnen?')) {
+                document.getElementById('mitarbeiterListe').innerHTML = '';
+                document.getElementById('materialListe').innerHTML = '';
+                document.getElementById('taetigkeiten').value = '';
+                document.getElementById('vorkommnisse').value = '';
+                document.getElementById('auftraggeber').value = '';
+                document.getElementById('bauvorhaben').value = '';
+                document.getElementById('auftragsnummer').value = '';
+                document.getElementById('kostenstelle').value = '';
+                document.getElementById('datum').valueAsDate = new Date();
+                clearSignature('sigAuftragnehmer');
+                clearSignature('sigAuftraggeber');
+                mitarbeiterCount = 0;
+                materialCount = 0;
+                addMitarbeiter();
+                updateSummary();
+                updateNumberDisplay();
+                window.scrollTo(0, 0);
+            }
+        }
+        
+        // ==========================================
+        // INITIALISIERUNG
+        // ==========================================
+        document.getElementById('datum').valueAsDate = new Date();
+        loadSettings();
+        updateNumberDisplay();
+        updateHistoryDisplay();
+        updateFirmenDropdown();
+        updateMitarbeiterDropdown();
+        updateWochentagAnzeige();
+        initSignature('sigAuftragnehmer');
+        initSignature('sigAuftraggeber');
+        updateSummary();
+        
+        // ==========================================
+        // PWA SERVICE WORKER
+        // ==========================================
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(function(reg) {
+                    console.log('Service Worker registriert');
+                })
+                .catch(function(err) {
+                    console.log('Service Worker Fehler:', err);
+                });
+        }
+    </script>
+</body>
+</html>
