@@ -1,0 +1,4 @@
+# config.php und Logdateien nicht direkt abrufbar machen
+<FilesMatch "^(config\.php|config\.sample\.php|.*\.log)$">
+    Require all denied
+</FilesMatch>
