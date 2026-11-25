@@ -672,6 +672,30 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+    
+        /* ===== Spracheingabe ===== */
+        .voice-card { text-align: center; }
+        .btn-mic {
+            width: 100%;
+            padding: 22px 15px;
+            font-size: 20px;
+            font-weight: 700;
+            border: none;
+            border-radius: 14px;
+            color: white;
+            background: linear-gradient(135deg, #c62828 0%, #e53935 100%);
+            box-shadow: 0 4px 12px rgba(198,40,40,0.35);
+        }
+        .btn-mic small { display: block; font-size: 13px; font-weight: 400; opacity: 0.9; margin-top: 4px; }
+        .btn-mic.recording { background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%); animation: micPulse 1.2s infinite; }
+        .btn-mic.busy { background: #777; box-shadow: none; }
+        @keyframes micPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        .voice-hint { font-size: 12px; color: #666; margin-top: 8px; }
+        .voice-box { background: #f5f7fb; border-radius: 8px; padding: 10px 12px; margin: 10px 0; text-align: left; font-size: 14px; white-space: pre-wrap; }
+        .voice-box h4 { font-size: 12px; color: #1e3c72; margin-bottom: 4px; text-transform: uppercase; }
+        .voice-box.sq { background: #fff8e1; border: 1px solid #ffb300; font-size: 16px; }
+        .voice-settings label { display: block; font-size: 12px; color: #555; margin: 8px 0 3px; }
+        .voice-settings input { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -684,6 +708,26 @@
             <button onclick="openSettings()" style="float:right; padding:5px 10px; font-size:12px; border-radius:5px; border:none; background:#1e3c72; color:white;">⚙️ Stammdaten</button>
         </div>
         
+        <!-- Spracheingabe -->
+        <div class="card voice-card">
+            <button id="btnMic" class="btn-mic" onclick="toggleAufnahme()">🎤 Fol shqip<small>Auf Albanisch sprechen</small></button>
+            <div class="voice-hint" id="voiceHint">Shtyp, fol, pastaj shtyp përsëri · Tippen, sprechen, nochmal tippen</div>
+        </div>
+        
+        <!-- Ergebnis Spracheingabe -->
+        <div id="voiceDialog" class="dialog-overlay" style="display:none;">
+            <div class="dialog-content">
+                <h3>🎤 A është e saktë? / Ist das richtig?</h3>
+                <div class="voice-box sq"><h4>🇦🇱 Kontroll</h4><span id="voiceSq"></span></div>
+                <div class="voice-box"><h4>🇩🇪 Deutsch</h4><span id="voiceDe"></span></div>
+                <div class="voice-box" style="font-size:12px; color:#777;"><h4>Erkannt (Original)</h4><span id="voiceOrig"></span></div>
+                <div class="dialog-buttons" style="display:flex; gap:8px;">
+                    <button onclick="closeVoiceDialog()" style="flex:1; background:#dc3545; color:white;">✗ Jo / Nein</button>
+                    <button onclick="uebernehmeSprache()" style="flex:2; background:#28a745; color:white; font-weight:700;">✓ Po / Übernehmen</button>
+                </div>
+            </div>
+        </div>
+        
         <!-- Stammdaten-Dialog -->
         <div id="settingsDialog" class="dialog-overlay" style="display:none;">
             <div class="dialog-content">
@@ -692,6 +736,7 @@
                 <div class="settings-tabs">
                     <button class="tab-btn active" onclick="showTab('firmen')">🏢 Firmen</button>
                     <button class="tab-btn" onclick="showTab('mitarbeiter')">👷 Mitarbeiter</button>
+                    <button class="tab-btn" onclick="showTab('sprache')">🎤 Sprache</button>
                 </div>
                 
                 <div id="tab-firmen" class="tab-content active">
@@ -712,6 +757,18 @@
                         <button onclick="addStammMitarbeiter()">+ Hinzufügen</button>
                     </div>
                     <ul id="mitarbeiterStammListe" class="stammdaten-liste"></ul>
+                </div>
+                
+                <div id="tab-sprache" class="tab-content">
+                    <div class="voice-settings">
+                        <label>Server-Adresse (sprache.php)</label>
+                        <input type="url" id="voiceUrl" placeholder="https://meine-domain.de/regie/sprache.php">
+                        <label>App-Token (aus config.php)</label>
+                        <input type="password" id="voiceToken" placeholder="Token">
+                        <label>Name des Sprechers (für „ich habe gearbeitet…“)</label>
+                        <input type="text" id="voiceSprecher" placeholder="z.B. Arben / Vorarbeiter">
+                        <button onclick="saveVoiceSettings()" style="margin-top:10px; width:100%;">💾 Speichern</button>
+                    </div>
                 </div>
                 
                 <div class="dialog-buttons">
@@ -913,6 +970,7 @@
             settingsKey: 'regiebericht_settings',
             firmenKey: 'regiebericht_firmen',
             mitarbeiterKey: 'regiebericht_stamm_mitarbeiter',
+            voiceKey: 'regiebericht_sprache',
             
             // Zuschlagseinstellungen
             normalStunden: 8,           // Stunden pro Tag ohne Überstunden
@@ -1211,6 +1269,7 @@
             document.getElementById('settingsDialog').style.display = 'flex';
             updateFirmenListe();
             updateMitarbeiterStammListe();
+            loadVoiceSettings();
         }
         
         function closeSettings() {
@@ -2008,6 +2067,238 @@
                 updateNumberDisplay();
                 window.scrollTo(0, 0);
             }
+        }
+        
+        // ==========================================
+        // SPRACHEINGABE (Albanisch -> Deutsch)
+        // ==========================================
+        var voiceRecorder = null;
+        var voiceChunks = [];
+        var voiceStream = null;
+        var voiceErgebnis = null;
+        var voiceTimer = null;
+        
+        function getVoiceSettings() {
+            try { return JSON.parse(localStorage.getItem(CONFIG.voiceKey) || '{}'); } catch (e) { return {}; }
+        }
+        
+        function loadVoiceSettings() {
+            var v = getVoiceSettings();
+            document.getElementById('voiceUrl').value = v.url || '';
+            document.getElementById('voiceToken').value = v.token || '';
+            document.getElementById('voiceSprecher').value = v.sprecher || '';
+        }
+        
+        function saveVoiceSettings() {
+            var v = getVoiceSettings();
+            v.url = document.getElementById('voiceUrl').value.trim();
+            v.token = document.getElementById('voiceToken').value.trim();
+            v.sprecher = document.getElementById('voiceSprecher').value.trim();
+            localStorage.setItem(CONFIG.voiceKey, JSON.stringify(v));
+            alert('Gespeichert');
+        }
+        
+        // Bekannte Auftraggeber merken (helfen der Namenserkennung)
+        function merkeAuftraggeber(name) {
+            name = (name || '').trim();
+            if (!name) return;
+            var v = getVoiceSettings();
+            var liste = v.auftraggeber || [];
+            liste = liste.filter(function(n) { return n.toLowerCase() !== name.toLowerCase(); });
+            liste.unshift(name);
+            v.auftraggeber = liste.slice(0, 50);
+            localStorage.setItem(CONFIG.voiceKey, JSON.stringify(v));
+        }
+        document.getElementById('auftraggeber').addEventListener('change', function() {
+            merkeAuftraggeber(this.value);
+        });
+        
+        function setMicState(state, text) {
+            var btn = document.getElementById('btnMic');
+            btn.classList.remove('recording', 'busy');
+            if (state === 'recording') {
+                btn.classList.add('recording');
+                btn.innerHTML = '⏹ Ndalo<small>Stopp – ' + (text || '') + '</small>';
+            } else if (state === 'busy') {
+                btn.classList.add('busy');
+                btn.innerHTML = '⏳ Duke përpunuar…<small>Wird verarbeitet…</small>';
+            } else {
+                btn.innerHTML = '🎤 Fol shqip<small>Auf Albanisch sprechen</small>';
+            }
+        }
+        
+        function toggleAufnahme() {
+            if (voiceRecorder && voiceRecorder.state === 'recording') {
+                voiceRecorder.stop();
+                return;
+            }
+            if (document.getElementById('btnMic').classList.contains('busy')) return;
+            
+            var v = getVoiceSettings();
+            if (!v.url || !v.token) {
+                alert('Bitte zuerst unter ⚙️ Stammdaten → 🎤 Sprache die Server-Adresse und den Token eintragen.');
+                openSettings();
+                return;
+            }
+            if (!navigator.mediaDevices || !window.MediaRecorder) {
+                alert('Dieser Browser unterstützt keine Audioaufnahme.');
+                return;
+            }
+            
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+                voiceStream = stream;
+                voiceChunks = [];
+                var mime = '';
+                ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac'].some(function(m) {
+                    if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) { mime = m; return true; }
+                    return false;
+                });
+                voiceRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+                voiceRecorder.ondataavailable = function(e) { if (e.data && e.data.size) voiceChunks.push(e.data); };
+                voiceRecorder.onstop = sendeAufnahme;
+                voiceRecorder.start();
+                
+                var sek = 0;
+                setMicState('recording', '0 s');
+                voiceTimer = setInterval(function() {
+                    sek++;
+                    setMicState('recording', sek + ' s');
+                    if (sek >= 180 && voiceRecorder.state === 'recording') voiceRecorder.stop(); // max. 3 Minuten
+                }, 1000);
+            }).catch(function(err) {
+                alert('Kein Zugriff auf das Mikrofon: ' + err.message);
+            });
+        }
+        
+        function sendeAufnahme() {
+            clearInterval(voiceTimer);
+            if (voiceStream) voiceStream.getTracks().forEach(function(t) { t.stop(); });
+            
+            var type = (voiceRecorder.mimeType || 'audio/webm').split(';')[0];
+            var blob = new Blob(voiceChunks, { type: type });
+            if (blob.size < 2000) {
+                setMicState('idle');
+                showStatus('Aufnahme zu kurz', true);
+                return;
+            }
+            var ext = type.indexOf('mp4') >= 0 || type.indexOf('aac') >= 0 ? 'm4a' : 'webm';
+            
+            var v = getVoiceSettings();
+            var kontext = {
+                datum: document.getElementById('datum').value,
+                mitarbeiter: getStammMitarbeiter().map(function(m) { return m.name + (m.funktion ? ' / ' + m.funktion : ''); }),
+                auftraggeber: v.auftraggeber || []
+            };
+            if (v.sprecher) kontext.mitarbeiter.unshift(v.sprecher);
+            
+            var fd = new FormData();
+            fd.append('audio', blob, 'aufnahme.' + ext);
+            fd.append('kontext', JSON.stringify(kontext));
+            
+            setMicState('busy');
+            fetch(v.url, { method: 'POST', headers: { 'X-App-Token': v.token }, body: fd })
+                .then(function(r) {
+                    return r.json().catch(function() { return { error: 'Ungültige Server-Antwort (HTTP ' + r.status + ')' }; });
+                })
+                .then(function(data) {
+                    setMicState('idle');
+                    if (data.error) {
+                        showStatus('Spracheingabe: ' + data.error, true);
+                        alert('Gabim / Fehler:\n' + data.error);
+                        return;
+                    }
+                    zeigeVoiceErgebnis(data);
+                })
+                .catch(function(err) {
+                    setMicState('idle');
+                    showStatus('Server nicht erreichbar: ' + err.message, true);
+                    alert('Server nicht erreichbar / Serveri nuk përgjigjet.\n' + err.message);
+                });
+        }
+        
+        function zeigeVoiceErgebnis(data) {
+            voiceErgebnis = data.felder;
+            document.getElementById('voiceSq').textContent = data.felder.rueckuebersetzung_sq || '';
+            document.getElementById('voiceDe').textContent = data.felder.deutsch || '';
+            document.getElementById('voiceOrig').textContent = data.transkript || '';
+            document.getElementById('voiceDialog').style.display = 'flex';
+        }
+        
+        function closeVoiceDialog() {
+            document.getElementById('voiceDialog').style.display = 'none';
+            voiceErgebnis = null;
+        }
+        
+        function setFeld(id, wert) {
+            if (wert !== undefined && wert !== null && String(wert).trim() !== '') {
+                document.getElementById(id).value = String(wert).trim();
+                return true;
+            }
+            return false;
+        }
+        
+        function haengeText(id, text) {
+            text = (text || '').trim();
+            if (!text) return;
+            var el = document.getElementById(id);
+            el.value = el.value.trim() ? el.value.trim() + '\n' + text : text;
+        }
+        
+        function istZeit(t) { return /^\d{1,2}:\d{2}$/.test(t || ''); }
+        function zeit2(t) { var p = t.split(':'); return ('0' + p[0]).slice(-2) + ':' + p[1]; }
+        
+        function uebernehmeSprache() {
+            var f = voiceErgebnis;
+            if (!f) return closeVoiceDialog();
+            var v = getVoiceSettings();
+            
+            if (/^\d{4}-\d{2}-\d{2}$/.test(f.datum || '')) {
+                document.getElementById('datum').value = f.datum;
+                updateWochentagAnzeige();
+            }
+            if (setFeld('auftraggeber', f.auftraggeber)) merkeAuftraggeber(f.auftraggeber);
+            setFeld('bauvorhaben', f.bauvorhaben);
+            setFeld('auftragsnummer', f.auftragsnummer);
+            
+            // Mitarbeiter: leere Standardzeilen ersetzen, sonst anhängen
+            (f.mitarbeiter || []).forEach(function(m) {
+                var name = (m.name || '').trim();
+                if (!name || name.toUpperCase() === 'ICH') name = v.sprecher || '';
+                
+                var row = null;
+                document.querySelectorAll('.mitarbeiter-row').forEach(function(r) {
+                    if (row) return;
+                    var n = r.querySelector('.ma-name').value.trim();
+                    if (n === '' || (name && n.toLowerCase() === name.toLowerCase())) row = r;
+                });
+                if (!row) {
+                    addMitarbeiterWithName('');
+                    var rows = document.querySelectorAll('.mitarbeiter-row');
+                    row = rows[rows.length - 1];
+                }
+                row.querySelector('.ma-name').value = name;
+                if (istZeit(m.von)) row.querySelector('.ma-von').value = zeit2(m.von);
+                if (istZeit(m.bis)) row.querySelector('.ma-bis').value = zeit2(m.bis);
+                if (m.pause !== null && m.pause !== undefined && !isNaN(m.pause)) row.querySelector('.ma-pause').value = m.pause;
+                calculateHours(row);
+            });
+            
+            haengeText('taetigkeiten', f.taetigkeiten);
+            haengeText('vorkommnisse', f.vorkommnisse);
+            
+            (f.material || []).forEach(function(mat) {
+                if (!mat.bezeichnung) return;
+                addMaterial();
+                var rows = document.querySelectorAll('.material-row');
+                var row = rows[rows.length - 1];
+                row.querySelector('.mat-bezeichnung').value = mat.bezeichnung;
+                if (mat.menge !== null && mat.menge !== undefined) row.querySelector('.mat-menge').value = mat.menge;
+                if (mat.einheit) row.querySelector('.mat-einheit').value = mat.einheit;
+            });
+            
+            updateSummary();
+            closeVoiceDialog();
+            showStatus('✓ Spracheingabe übernommen – bitte kurz prüfen', false);
         }
         
         // ==========================================

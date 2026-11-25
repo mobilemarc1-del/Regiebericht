@@ -1,5 +1,5 @@
 // Service Worker für Regiebericht PWA
-const CACHE_NAME = 'regiebericht-v1';
+const CACHE_NAME = 'regiebericht-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -44,6 +44,8 @@ self.addEventListener('activate', function(event) {
 
 // Fetch - Cache-First Strategie
 self.addEventListener('fetch', function(event) {
+  // Nur GET-Anfragen cachen (Spracheingabe = POST an eigenen Server)
+  if (event.request.method !== 'GET') return;
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
