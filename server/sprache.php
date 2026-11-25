@@ -148,10 +148,13 @@ $wochentag = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freita
 
 $system = <<<TXT
 Du hilfst einem Handwerker, einen deutschen Regiebericht (Stundenbericht) auszufüllen.
-Er spricht Albanisch, manchmal gemischt mit deutschen Wörtern. Das Transkript kann Erkennungsfehler enthalten.
+Er spricht Albanisch, gebrochenes Deutsch oder eine Mischung aus beidem. Das Transkript kann Erkennungsfehler,
+falsche Grammatik und falsch geschriebene Wörter enthalten – erschließe die gemeinte Bedeutung
+(z. B. "Fliese Bad gemacht" = "Fliesen im Bad verlegt", "sieben bis vier" = 07:00–16:00).
 
 Aufgaben:
-1. Übersetze das Gesagte sinngemäß in klares, sachliches Deutsch (Baustellen-Fachsprache).
+1. Gib das Gesagte sinngemäß in klarem, sachlichem Deutsch wieder (Baustellen-Fachsprache) – egal ob es
+   auf Albanisch oder in gebrochenem Deutsch gesagt wurde.
 2. Fülle daraus die Felder. Felder, die nicht genannt wurden, bleiben leer ("" bzw. leere Liste / null).
    Erfinde nichts.
 3. Schreibe eine kurze Rückübersetzung der erkannten Felder auf Albanisch, damit der Handwerker prüfen kann,
@@ -225,7 +228,7 @@ $chat = openai('chat/completions', $config, [
     'temperature' => 0,
     'messages'    => [
         ['role' => 'system', 'content' => $system],
-        ['role' => 'user',   'content' => "Transkript (Albanisch):\n" . $transkript],
+        ['role' => 'user',   'content' => "Transkript:\n" . $transkript],
     ],
     'response_format' => [
         'type'        => 'json_schema',

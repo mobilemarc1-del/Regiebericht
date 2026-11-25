@@ -14,8 +14,9 @@ return [
 
     // Spracherkennung: 'gpt-4o-transcribe' (beste Qualität), 'gpt-4o-mini-transcribe' (günstiger) oder 'whisper-1'
     'stt_model'    => 'gpt-4o-transcribe',
-    // Sprache der Aufnahme ('sq' = Albanisch). Leer lassen = automatisch erkennen (gut bei Deutsch-Albanisch-Mix)
-    'stt_language' => 'sq',
+    // Sprache der Aufnahme: leer = automatisch erkennen (empfohlen: Albanisch, gebrochenes Deutsch oder Mix).
+    // 'sq' nur setzen, wenn er ausschließlich Albanisch spricht.
+    'stt_language' => '',
 
     // Modell für Übersetzung + Felder
     'llm_model' => 'gpt-4o-mini',
